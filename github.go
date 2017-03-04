@@ -44,8 +44,9 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 		if opt.Page > SearchIssuesLimit/PerPage {
 			//Start new search
 			since = last
+			fmt.Println("last", last)
 			oldest, _, err := client.Issues.Get(context.Background(), Owner, Repo, last)
-			log.Println("Search with new oldest:", oldest)
+			log.Println("Search with new oldest:", oldest.Number)
 			if err != nil {
 				return err
 			}
@@ -68,7 +69,7 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 				continue
 			}
 			log.Println("Number:", *pr.Number, " title:", *pr.Title, "Created:", *pr.CreatedAt)
-			if f(&pr) != nil {
+			if err := f(&pr); err != nil {
 				log.Println(err)
 				continue
 			}
