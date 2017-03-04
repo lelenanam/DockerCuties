@@ -137,14 +137,11 @@ func (t Twitter) PostToTwitter(cutie *DockerCuties) error {
 	log.Println("Got:", res.ContentLength, "StatusCode:", res.StatusCode)
 	defer res.Body.Close()
 
-	if res.ContentLength <= 0 {
-		return fmt.Errorf("Response length <= 0")
-	}
-
 	b := bytes.NewBuffer(nil)
 	encoder := base64.NewEncoder(base64.StdEncoding, b)
 	defer encoder.Close()
-	if res.ContentLength >= TwitterUploadLimit {
+
+	if res.ContentLength >= TwitterUploadLimit || res.ContentLength < 0 {
 		log.Println("Downsize image to twitter limit:", TwitterUploadLimit)
 		err = downsize.Downsize(TwitterUploadLimit, res.Body, encoder)
 		if err != nil {
@@ -157,6 +154,9 @@ func (t Twitter) PostToTwitter(cutie *DockerCuties) error {
 		}
 	}
 	encoder.Close()
+	if b.Len() == 0 {
+		return fmt.Errorf("Empty image data")
+	}
 	mediaResponse, err := api.UploadMedia(b.String())
 	if err != nil {
 		return fmt.Errorf("Cannot upload data: %q", err)
