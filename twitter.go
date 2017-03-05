@@ -123,7 +123,7 @@ func (t Twitter) LastPostedPull() (int, error) {
 }
 
 // PostToTwitter posts cutie to twitter
-func (t Twitter) PostToTwitter(cutie *DockerCuties) error {
+func (t Twitter) PostToTwitter(cutie *DockerCutie) error {
 	anaconda.SetConsumerKey(t.twitterConsumerKey)
 	anaconda.SetConsumerSecret(t.twitterConsumerSecret)
 	api := anaconda.NewTwitterApi(t.twitterAccessToken, t.twitterAccessSecret)

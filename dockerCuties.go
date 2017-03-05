@@ -28,8 +28,8 @@ const TwitterUser = "DockerCuties"
 //TwitterUploadLimit is limit for media upload in bytes
 const TwitterUploadLimit = 3145728
 
-// DockerCuties represents docker cutie by pull request URL and picture URL
-type DockerCuties struct {
+// DockerCutie represents docker cutie by pull request URL and picture URL
+type DockerCutie struct {
 	pullURL  string
 	cutieURL string
 }
@@ -37,11 +37,11 @@ type DockerCuties struct {
 // GetCutieFromPull parse body of pull request and return cutie if found
 // link:
 // ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png)
-func GetCutieFromPull(pull *github.Issue) *DockerCuties {
+func GetCutieFromPull(pull *github.Issue) *DockerCutie {
 	re := regexp.MustCompile(`!\[.*\]\((.*)\)`)
 	result := re.FindStringSubmatch(*pull.Body)
 	if len(result) > 1 {
-		return &DockerCuties{
+		return &DockerCutie{
 			pullURL:  *pull.HTMLURL,
 			cutieURL: result[len(result)-1],
 		}
