@@ -30,8 +30,9 @@ const TwitterUploadLimit = 3145728
 
 // DockerCutie represents docker cutie by pull request URL and picture URL
 type DockerCutie struct {
-	pullURL  string
-	cutieURL string
+	pullnumber int
+	pullURL    string
+	cutieURL   string
 }
 
 // GetCutieFromPull parse body of pull request and return cutie if found
@@ -42,8 +43,9 @@ func GetCutieFromPull(pull *github.Issue) *DockerCutie {
 	result := re.FindStringSubmatch(*pull.Body)
 	if len(result) > 1 {
 		return &DockerCutie{
-			pullURL:  *pull.HTMLURL,
-			cutieURL: result[len(result)-1],
+			pullnumber: *pull.Number,
+			pullURL:    *pull.HTMLURL,
+			cutieURL:   result[len(result)-1],
 		}
 	}
 	return nil
