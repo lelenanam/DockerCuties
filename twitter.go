@@ -16,19 +16,30 @@ import (
 	"github.com/lelenanam/downsize"
 )
 
-// Twitter provides credentials for accessing twitter
-type Twitter struct {
+// TwitterTokens provides credentials for accessing twitter
+type TwitterTokens struct {
 	twitterConsumerKey    string
 	twitterConsumerSecret string
 	twitterAccessToken    string
 	twitterAccessSecret   string
 }
 
-// DeleteAllTweets delets all tweets for user
-func (t Twitter) DeleteAllTweets(user string) error {
+// Twitter provides api for twitter
+type Twitter struct {
+	api *anaconda.TwitterApi
+}
+
+// NewTwitter returns *Twitter to work with twitter
+func NewTwitter(t TwitterTokens) *Twitter {
 	anaconda.SetConsumerKey(t.twitterConsumerKey)
 	anaconda.SetConsumerSecret(t.twitterConsumerSecret)
 	api := anaconda.NewTwitterApi(t.twitterAccessToken, t.twitterAccessSecret)
+	return &Twitter{api: api}
+}
+
+// DeleteAllTweets delets all tweets for user
+func (t *Twitter) DeleteAllTweets(user string) error {
+	api := t.api
 
 	v := url.Values{}
 	v.Set("user", user)
@@ -77,10 +88,8 @@ func (t Twitter) DeleteAllTweets(user string) error {
 
 // LastPostedPull returns last number of pull request posted to twitter
 // if pull request link not found in twitter timeline, returns -1
-func (t Twitter) LastPostedPull() (int, error) {
-	anaconda.SetConsumerKey(t.twitterConsumerKey)
-	anaconda.SetConsumerSecret(t.twitterConsumerSecret)
-	api := anaconda.NewTwitterApi(t.twitterAccessToken, t.twitterAccessSecret)
+func (t *Twitter) LastPostedPull() (int, error) {
+	api := t.api
 
 	v := url.Values{}
 	v.Set("user", TwitterUser)
@@ -124,10 +133,8 @@ func (t Twitter) LastPostedPull() (int, error) {
 }
 
 // PostToTwitter posts cutie to twitter
-func (t Twitter) PostToTwitter(cutie *DockerCutie) error {
-	anaconda.SetConsumerKey(t.twitterConsumerKey)
-	anaconda.SetConsumerSecret(t.twitterConsumerSecret)
-	api := anaconda.NewTwitterApi(t.twitterAccessToken, t.twitterAccessSecret)
+func (t *Twitter) PostToTwitter(cutie *DockerCutie) error {
+	api := t.api
 
 	log.Println("Download from:", cutie.cutieURL)
 	res, err := http.Get(cutie.cutieURL)

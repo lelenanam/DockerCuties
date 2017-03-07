@@ -8,23 +8,24 @@ import (
 
 func main() {
 	tokens, err := LoadTokens()
+	twitter := NewTwitter(tokens.twitter)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if err := tokens.twitter.DeleteAllTweets(TwitterUser); err != nil {
+	if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
 		log.Println(err)
 		return
 	}
 
-	// TweetCutie posts cutie from pull request pull to twitter
+	// tweetCutie posts cutie from pull request pull to twitter
 	tweetCutie := func(pull *github.Issue) error {
 		if pull.Body != nil {
 			cutie := GetCutieFromPull(pull)
 			if cutie != nil {
 				log.Println("Cutie:", *cutie)
-				if err := tokens.twitter.PostToTwitter(cutie); err != nil {
+				if err := twitter.PostToTwitter(cutie); err != nil {
 					return err
 				}
 			}
@@ -32,7 +33,7 @@ func main() {
 		return nil
 	}
 
-	lastPosted, err := tokens.twitter.LastPostedPull()
+	lastPosted, err := twitter.LastPostedPull()
 	if err != nil {
 		log.Println(err)
 		return
