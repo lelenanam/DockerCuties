@@ -12,7 +12,7 @@ const TokensFile = "TOKENS"
 // Tokens are the credentials for twitter and github
 type Tokens struct {
 	github  Github
-	twitter Twitter
+	twitter TwitterTokens
 }
 
 // LoadTokens loads tokens from file TokensFile
