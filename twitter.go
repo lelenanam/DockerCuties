@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"image"
 	"io"
 	"log"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/ChimeraCoder/anaconda"
-	"github.com/morelena/downsize"
+	"github.com/lelenanam/downsize"
 )
 
 // Twitter provides credentials for accessing twitter
@@ -142,8 +143,13 @@ func (t Twitter) PostToTwitter(cutie *DockerCutie) error {
 	defer encoder.Close()
 
 	if res.ContentLength >= TwitterUploadLimit || res.ContentLength < 0 {
+		img, format, err := image.Decode(res.Body)
+		if err != nil {
+			return fmt.Errorf("Error: %v, cannot decode image", err)
+		}
 		log.Println("Downsize image to twitter limit:", TwitterUploadLimit)
-		err = downsize.Downsize(TwitterUploadLimit, res.Body, encoder)
+		opts := &downsize.Options{Size: TwitterUploadLimit, Format: format}
+		err = downsize.Encode(encoder, img, opts)
 		if err != nil {
 			return fmt.Errorf("Cannot downsize: %q", err)
 		}
@@ -154,9 +160,11 @@ func (t Twitter) PostToTwitter(cutie *DockerCutie) error {
 		}
 	}
 	encoder.Close()
+
 	if b.Len() == 0 {
 		return fmt.Errorf("Empty image data")
 	}
+
 	mediaResponse, err := api.UploadMedia(b.String())
 	if err != nil {
 		return fmt.Errorf("Cannot upload data: %q", err)
