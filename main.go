@@ -19,7 +19,7 @@ func main() {
 	}
 
 	// TweetCutie posts cutie from pull request pull to twitter
-	TweetCutie := func(pull *github.Issue) error {
+	tweetCutie := func(pull *github.Issue) error {
 		if pull.Body != nil {
 			cutie := GetCutieFromPull(pull)
 			if cutie != nil {
@@ -38,8 +38,8 @@ func main() {
 		return
 	}
 	if lastPosted > 0 {
-		tokens.github.PullsSinceFunc(lastPosted+1, TweetCutie)
+		tokens.github.PullsSinceFunc(lastPosted+1, tweetCutie)
 	} else {
-		tokens.github.PullsSinceFunc(StartCutiePullReq, TweetCutie)
+		tokens.github.PullsSinceFunc(StartCutiePullReq, tweetCutie)
 	}
 }
