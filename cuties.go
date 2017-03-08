@@ -3,6 +3,9 @@ package main
 import (
 	"regexp"
 
+	"log"
+	"strings"
+
 	"github.com/google/go-github/github"
 )
 
@@ -35,10 +38,15 @@ type DockerCutie struct {
 	cutieURL   string
 }
 
-// GetCutieFromPull parse body of pull request and return cutie if found
-// link:
+// GetCutieFromPull parse body of pull request and return cutie if found link:
 // ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png)
 func GetCutieFromPull(pull *github.Issue) *DockerCutie {
+	// TODO add flic.kr links, now just skip it
+	if strings.Contains(*pull.Body, "flic.kr") {
+		log.Println("flic.kr found")
+		return nil
+	}
+
 	re := regexp.MustCompile(`!\[.*\]\((.*)\)`)
 	result := re.FindStringSubmatch(*pull.Body)
 	if len(result) > 1 {
