@@ -69,8 +69,7 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 			}
 			log.Println("Number:", *pr.Number, " title:", *pr.Title, "Created:", *pr.CreatedAt)
 			if err := f(&pr); err != nil {
-				log.Println(err)
-				continue
+				return err
 			}
 		}
 		last = *pullreqs.Issues[len(pullreqs.Issues)-1].Number + 1

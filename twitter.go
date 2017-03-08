@@ -169,7 +169,8 @@ func (t *Twitter) PostToTwitter(cutie *DockerCutie) error {
 	encoder.Close()
 
 	if b.Len() == 0 {
-		return fmt.Errorf("Empty image data")
+		log.Println("Empty image data")
+		return nil
 	}
 
 	mediaResponse, err := api.UploadMedia(b.String())

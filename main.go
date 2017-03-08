@@ -39,8 +39,14 @@ func main() {
 		return
 	}
 	if lastPosted > 0 {
-		tokens.github.PullsSinceFunc(lastPosted+1, tweetCutie)
+		if err = tokens.github.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
+			log.Println(err)
+			return
+		}
 	} else {
-		tokens.github.PullsSinceFunc(StartCutiePullReq, tweetCutie)
+		if err = tokens.github.PullsSinceFunc(StartCutiePullReq, tweetCutie); err != nil {
+			log.Println(err)
+			return
+		}
 	}
 }
