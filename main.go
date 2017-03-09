@@ -40,6 +40,14 @@ func main() {
 		return nil
 	}
 
+	// Single post by number
+	// n := 31705
+	// if err = tokens.github.PullFunc(n, tweetCutie); err != nil {
+	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
+	// 	return
+	// }
+	// return
+
 	lastPosted, err := twitter.LastPostedPull()
 	if err != nil {
 		log.WithError(err).Error("Cannot check last posted pull request")
