@@ -1,11 +1,17 @@
 package main
 
 import (
+	"flag"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 )
 
+var isDelete = flag.Bool("delete", false, "delete all tweets before posting")
+
 func main() {
+	flag.Parse()
+
 	tokens, err := LoadTokens()
 	twitter := NewTwitter(tokens.twitter)
 	if err != nil {
@@ -13,9 +19,11 @@ func main() {
 		return
 	}
 
-	if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
-		log.WithFields(log.Fields{"User": TwitterUser}).WithError(err).Error("Cannot delete all tweets")
-		return
+	if *isDelete {
+		if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
+			log.WithFields(log.Fields{"User": TwitterUser}).WithError(err).Error("Cannot delete all tweets")
+			return
+		}
 	}
 
 	// tweetCutie posts cutie from pull request pull to twitter
