@@ -76,3 +76,24 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 		opt.Page++
 	}
 }
+
+// PullFunc applies function f to pull request number num
+func (g Github) PullFunc(num int, f func(*github.Issue) error) error {
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: g.githubPersonalAccessToken},
+	)
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	client := github.NewClient(tc)
+
+	pull, _, err := client.Issues.Get(context.Background(), Owner, Repo, num)
+	if err != nil {
+		log.WithFields(log.Fields{"Owner": Owner, "Repo": Repo, "number": num}).WithError(err).Error("Cannot get issue")
+		return err
+	}
+
+	log.WithFields(log.Fields{"number": *pull.Number, " title": *pull.Title}).Info("Pull request")
+	if err := f(pull); err != nil {
+		return err
+	}
+	return nil
+}
