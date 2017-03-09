@@ -2,10 +2,9 @@ package main
 
 import (
 	"regexp"
-
-	"log"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 )
 
@@ -43,7 +42,7 @@ type DockerCutie struct {
 func GetCutieFromPull(pull *github.Issue) *DockerCutie {
 	// TODO add flic.kr links, now just skip it
 	if strings.Contains(*pull.Body, "flic.kr") {
-		log.Println("flic.kr found")
+		log.WithFields(log.Fields{"body": *pull.Body, "pull": *pull.URL}).Warn("flic.kr found")
 		return nil
 	}
 

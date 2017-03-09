@@ -1,8 +1,7 @@
 package main
 
 import (
-	"log"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	}
 
 	if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
-		log.Println(err)
+		log.WithFields(log.Fields{"User": TwitterUser}).WithError(err).Error("Cannot delete all tweets")
 		return
 	}
 
@@ -24,7 +23,7 @@ func main() {
 		if pull.Body != nil {
 			cutie := GetCutieFromPull(pull)
 			if cutie != nil {
-				log.Println("Cutie:", *cutie)
+				log.WithFields(log.Fields{"number": cutie.pullnumber, "pull": cutie.pullURL, "cutie": cutie.cutieURL}).Info("Cutie")
 				if err := twitter.PostToTwitter(cutie); err != nil {
 					return err
 				}
@@ -35,17 +34,17 @@ func main() {
 
 	lastPosted, err := twitter.LastPostedPull()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Cannot check last posted pull request")
 		return
 	}
 	if lastPosted > 0 {
 		if err = tokens.github.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
-			log.Println(err)
+			log.WithFields(log.Fields{"since": lastPosted}).WithError(err).Error("For pull requests since")
 			return
 		}
 	} else {
 		if err = tokens.github.PullsSinceFunc(StartCutiePullReq, tweetCutie); err != nil {
-			log.Println(err)
+			log.WithFields(log.Fields{"since": StartCutiePullReq}).WithError(err).Error("For pull requests since")
 			return
 		}
 	}

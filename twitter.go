@@ -3,14 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"image"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/lelenanam/downsize"
@@ -46,6 +46,7 @@ func (t *Twitter) DeleteAllTweets(user string) error {
 
 	timeline, err := api.GetUserTimeline(v)
 	if err != nil {
+		log.WithFields(log.Fields{"values": v}).WithError(err).Error("Cannot get user timeline")
 		return err
 	}
 
@@ -54,10 +55,10 @@ func (t *Twitter) DeleteAllTweets(user string) error {
 	}
 
 	for _, tw := range timeline {
-		log.Println("Delete tweet:", tw.Id, tw.Text)
+		log.WithFields(log.Fields{"ID": tw.Id, "Text": tw.Text}).Info("Delete tweet")
 		_, err := api.DeleteTweet(tw.Id, false)
 		if err != nil {
-			log.Println("Cannot delete tweet:", err)
+			log.WithFields(log.Fields{"ID": tw.Id, "Text": tw.Text}).WithError(err).Error("Cannot delete tweet")
 			continue
 		}
 	}
@@ -71,10 +72,10 @@ func (t *Twitter) DeleteAllTweets(user string) error {
 		}
 
 		for _, tw := range timeline {
-			log.Println("Delete tweet:", tw.Id, tw.Text)
+			log.WithFields(log.Fields{"ID": tw.Id, "Text": tw.Text}).Info("Delete tweet")
 			_, err := api.DeleteTweet(tw.Id, false)
 			if err != nil {
-				log.Println("Cannot delete tweet:", err)
+				log.WithFields(log.Fields{"ID": tw.Id, "Text": tw.Text}).WithError(err).Error("Cannot delete tweet")
 				continue
 			}
 		}
@@ -100,7 +101,7 @@ func (t *Twitter) LastPostedPull() (int, error) {
 	}
 
 	for _, tw := range timeline {
-		log.Println("Twitter timeline:\n", tw.CreatedAt, tw.Entities.Urls)
+		log.WithFields(log.Fields{"Created At": tw.CreatedAt, "Text": tw.Text}).Info("Twitter timeline")
 	}
 
 	if len(timeline) == 0 {
@@ -121,7 +122,7 @@ func (t *Twitter) LastPostedPull() (int, error) {
 	urls := timeline[withURLs].Entities.Urls
 	var lastpull string
 	for _, u := range urls {
-		log.Println("Last posted URL:", u.Expanded_url)
+		log.WithFields(log.Fields{"URL": u.Expanded_url}).Info("Last posted")
 		lastpull = u.Expanded_url //last url in tweet
 	}
 	splited := strings.Split(lastpull, "/")
@@ -136,13 +137,14 @@ func (t *Twitter) LastPostedPull() (int, error) {
 func (t *Twitter) PostToTwitter(cutie *DockerCutie) error {
 	api := t.api
 
-	log.Println("Download from:", cutie.cutieURL)
+	log.WithFields(log.Fields{"URL": cutie.cutieURL}).Info("Download")
 	res, err := http.Get(cutie.cutieURL)
 	if err != nil {
-		return fmt.Errorf("Cannot download cutie: %q", err)
+		log.WithFields(log.Fields{"URL": cutie.cutieURL}).WithError(err).Error("Cannot download")
+		return nil
 	}
 
-	log.Println("Got:", res.ContentLength, "StatusCode:", res.StatusCode)
+	log.WithFields(log.Fields{"Content Length": res.ContentLength, "Status Code": res.StatusCode}).Info("Got")
 	defer res.Body.Close()
 
 	b := bytes.NewBuffer(nil)
@@ -152,38 +154,44 @@ func (t *Twitter) PostToTwitter(cutie *DockerCutie) error {
 	if res.ContentLength >= TwitterUploadLimit || res.ContentLength < 0 {
 		img, format, err := image.Decode(res.Body)
 		if err != nil {
-			return fmt.Errorf("Error: %v, cannot decode image", err)
+			log.WithFields(log.Fields{"Body": res.Body}).WithError(err).Error("Cannot decode image")
+			return nil
 		}
-		log.Println("Downsize image to twitter limit:", TwitterUploadLimit)
+		log.WithFields(log.Fields{"Twitter upload limit": TwitterUploadLimit}).Info("Downsize image")
 		opts := &downsize.Options{Size: TwitterUploadLimit, Format: format}
 		err = downsize.Encode(encoder, img, opts)
 		if err != nil {
-			return fmt.Errorf("Cannot downsize: %q", err)
+			log.WithFields(log.Fields{"Body": res.Body}).WithError(err).Error("Cannot downsize")
+			return nil
 		}
 	} else {
 		_, err := io.Copy(encoder, res.Body)
 		if err != nil {
-			return err
+			log.WithFields(log.Fields{"Body": res.Body}).WithError(err).Error("Cannot copy to writer")
+			return nil
 		}
 	}
 	encoder.Close()
 
 	if b.Len() == 0 {
-		log.Println("Empty image data")
+		log.WithFields(log.Fields{"Body": res.Body}).Warn("Empty image data")
 		return nil
 	}
 
 	mediaResponse, err := api.UploadMedia(b.String())
 	if err != nil {
-		return fmt.Errorf("Cannot upload data: %q", err)
+		log.WithFields(log.Fields{"String of data": b.String()}).WithError(err).Error("Cannot upload data")
+		return nil
 	}
-	log.Println("Uploaded, mediaID:", mediaResponse.MediaID)
+	log.WithFields(log.Fields{"MediaID": mediaResponse.MediaID}).Info("Uploaded")
 
 	v := url.Values{}
 	v.Set("media_ids", strconv.FormatInt(mediaResponse.MediaID, 10))
-	_, err = api.PostTweet(cutie.pullURL, v)
+	msg := cutie.pullURL
+	_, err = api.PostTweet(msg, v)
 	if err != nil {
-		return fmt.Errorf("Cannot post tweet: %q", err)
+		log.WithFields(log.Fields{"Tweet message": msg}).WithError(err).Error("Cannot post tweet")
+		return nil
 	}
 	return nil
 }
