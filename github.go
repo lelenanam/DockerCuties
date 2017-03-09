@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 )
@@ -45,12 +45,12 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 			//Start new search
 			since = last
 			oldest, _, err := client.Issues.Get(context.Background(), Owner, Repo, last)
-			log.Println("Search with new oldest:", &oldest.Number)
+			log.WithFields(log.Fields{"oldest": &oldest.Number}).Info("Search with new oldest")
 			if err != nil {
 				return err
 			}
 			sinceDate = oldest.CreatedAt
-			log.Println("New date since:", sinceDate)
+			log.WithFields(log.Fields{"date": sinceDate}).Info("New since")
 			q = fmt.Sprintf("is:pr repo:%s/%s created:>=%s", Owner, Repo, sinceDate.Format("2006-01-02"))
 			opt.Page = 1
 		}
@@ -61,13 +61,13 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 		if len(pullreqs.Issues) == 0 {
 			return nil
 		}
-		log.Println("Page = ", opt.Page)
+		log.WithFields(log.Fields{"Page": opt.Page}).Info("Github pull requests")
 		for _, pr := range pullreqs.Issues {
 			//Skip numbers<since
 			if *pr.Number < since {
 				continue
 			}
-			log.Println("Number:", *pr.Number, " title:", *pr.Title, "Created:", *pr.CreatedAt)
+			log.WithFields(log.Fields{"number": *pr.Number, " title": *pr.Title}).Info("Pull request")
 			if err := f(&pr); err != nil {
 				return err
 			}
