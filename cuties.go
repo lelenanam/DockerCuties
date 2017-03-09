@@ -37,15 +37,25 @@ type DockerCutie struct {
 	cutieURL   string
 }
 
-// GetCutieFromPull parse body of pull request and return cutie if found link:
-// ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png)
+// GetCutieFromPull parse body of pull request and return cutie if found link
 func GetCutieFromPull(pull *github.Issue) *DockerCutie {
-	// TODO add flic.kr links, now just skip it
+	// flic.kr links
 	if strings.Contains(*pull.Body, "flic.kr") {
 		log.WithFields(log.Fields{"body": *pull.Body, "pull": *pull.URL}).Warn("flic.kr found")
+		// [![kitteh](https://c2.staticflickr.com/4/3147/2567501805_17ee8fd947_z.jpg)](https://flic.kr/p/4UT7Qv)
+		re := regexp.MustCompile(`\[!\[.*\]\((.*)\)\]\(.*\)`)
+		result := re.FindStringSubmatch(*pull.Body)
+		if len(result) > 1 {
+			return &DockerCutie{
+				pullnumber: *pull.Number,
+				pullURL:    *pull.HTMLURL,
+				cutieURL:   result[len(result)-1],
+			}
+		}
 		return nil
 	}
 
+	// ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png)
 	re := regexp.MustCompile(`!\[.*\]\((.*)\)`)
 	result := re.FindStringSubmatch(*pull.Body)
 	if len(result) > 1 {
