@@ -2,7 +2,11 @@
 
 [![Build Status](https://travis-ci.org/lelenanam/DockerCuties.svg?branch=master)](https://travis-ci.org/lelenanam/DockerCuties)
 
-Post pictures of a cute animals from Docker's pull requests to twitter.
+Post pictures of cute animals from Docker's pull requests to twitter.
+
+# Example
+
+Collection of cuties from Docker pull requests on Twitter https://twitter.com/DockerCuties
 
 # Usage
 
