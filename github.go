@@ -9,18 +9,28 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Github provides credentials for accessing github
-type Github struct {
+// GithubToken provides credentials for accessing github
+type GithubToken struct {
 	githubPersonalAccessToken string
 }
 
-// PullsSinceFunc applies function f to all pull requests starting from number since
-func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
+// Github provides api for github
+type Github struct {
+	api *github.Client
+}
+
+// NewGithub returns *Github to work with github
+func NewGithub(t GithubToken) *Github {
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: g.githubPersonalAccessToken},
+		&oauth2.Token{AccessToken: t.githubPersonalAccessToken},
 	)
 	tc := oauth2.NewClient(oauth2.NoContext, ts)
-	client := github.NewClient(tc)
+	return &Github{api: github.NewClient(tc)}
+}
+
+// PullsSinceFunc applies function f to all pull requests starting from number since
+func (g *Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
+	client := g.api
 
 	last := since
 	if since < 0 {
@@ -78,12 +88,8 @@ func (g Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 }
 
 // PullFunc applies function f to pull request number num
-func (g Github) PullFunc(num int, f func(*github.Issue) error) error {
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: g.githubPersonalAccessToken},
-	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
-	client := github.NewClient(tc)
+func (g *Github) PullFunc(num int, f func(*github.Issue) error) error {
+	client := g.api
 
 	pull, _, err := client.Issues.Get(context.Background(), Owner, Repo, num)
 	if err != nil {
