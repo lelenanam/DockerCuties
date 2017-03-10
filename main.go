@@ -55,7 +55,7 @@ func main() {
 	}
 	if lastPosted > 0 {
 		if err = tokens.github.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
-			log.WithFields(log.Fields{"since": lastPosted}).WithError(err).Error("For pull requests since")
+			log.WithFields(log.Fields{"since": lastPosted + 1}).WithError(err).Error("For pull requests since")
 			return
 		}
 	} else {
