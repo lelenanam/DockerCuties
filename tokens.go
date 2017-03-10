@@ -11,7 +11,7 @@ const TokensFile = "TOKENS"
 
 // Tokens are the credentials for twitter and github
 type Tokens struct {
-	github  Github
+	github  GithubToken
 	twitter TwitterTokens
 }
 
