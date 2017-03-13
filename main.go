@@ -9,6 +9,7 @@ import (
 )
 
 var isDelete = flag.Bool("delete", false, "delete all tweets before posting")
+var logLevel = flag.String("loglevel", "warning", "log level (panic, fatal, error, warn or warning, info, debug)")
 
 func updateTwitter(g *Github, t *Twitter) {
 	// tweetCutie posts cutie from pull request pull to twitter
@@ -60,6 +61,12 @@ func main() {
 			return
 		}
 	}
+
+	lvl, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.WithFields(log.Fields{"log level": *logLevel}).WithError(err).Fatal("Cannot parse log level")
+	}
+	log.SetLevel(lvl)
 
 	// Single post by number
 	// n := 31705
