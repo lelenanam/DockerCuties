@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -33,6 +34,10 @@ func updateTwitter(g *Github, t *Twitter) {
 	}
 	if lastPosted > 0 {
 		if err = g.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
+			if strings.Contains(err.Error(), "404 Not Found") {
+				log.WithFields(log.Fields{"Owner": Owner, "Repo": Repo, "number": lastPosted + 1}).Debug("Issue not found")
+				return
+			}
 			log.WithFields(log.Fields{"since": lastPosted + 1}).WithError(err).Error("For pull requests since")
 			return
 		}
@@ -71,9 +76,9 @@ func main() {
 		}
 	}
 
-	// Single post by number
-	// n := 31705
-	// if err = tokens.github.PullFunc(n, tweetCutie); err != nil {
+	// // Single post by number
+	// n := 31799
+	// if err = gh.PullFunc(n, tweetCutie); err != nil {
 	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
 	// 	return
 	// }
