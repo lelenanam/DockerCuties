@@ -55,12 +55,12 @@ func (g *Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 			//Start new search
 			since = last
 			oldest, _, err := client.Issues.Get(context.Background(), Owner, Repo, last)
-			log.WithFields(log.Fields{"oldest": &oldest.Number}).Info("Search with new oldest")
+			log.WithFields(log.Fields{"oldest": &oldest.Number}).Debug("Search with new oldest")
 			if err != nil {
 				return err
 			}
 			sinceDate = oldest.CreatedAt
-			log.WithFields(log.Fields{"date": sinceDate}).Info("New since")
+			log.WithFields(log.Fields{"date": sinceDate}).Debug("New since")
 			q = fmt.Sprintf("is:pr repo:%s/%s created:>=%s", Owner, Repo, sinceDate.Format("2006-01-02"))
 			opt.Page = 1
 		}
@@ -71,13 +71,13 @@ func (g *Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 		if len(pullreqs.Issues) == 0 {
 			return nil
 		}
-		log.WithFields(log.Fields{"Page": opt.Page}).Info("Github pull requests")
+		log.WithFields(log.Fields{"Page": opt.Page}).Debug("Github pull requests")
 		for _, pr := range pullreqs.Issues {
 			//Skip numbers<since
 			if *pr.Number < since {
 				continue
 			}
-			log.WithFields(log.Fields{"number": *pr.Number, " title": *pr.Title}).Info("Pull request")
+			log.WithFields(log.Fields{"number": *pr.Number, " title": *pr.Title}).Debug("Pull request")
 			if err := f(&pr); err != nil {
 				return err
 			}
@@ -97,7 +97,7 @@ func (g *Github) PullFunc(num int, f func(*github.Issue) error) error {
 		return err
 	}
 
-	log.WithFields(log.Fields{"number": *pull.Number, " title": *pull.Title}).Info("Pull request")
+	log.WithFields(log.Fields{"number": *pull.Number, " title": *pull.Title}).Debug("Pull request")
 	if err := f(pull); err != nil {
 		return err
 	}

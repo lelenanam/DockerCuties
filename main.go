@@ -46,14 +46,23 @@ func updateTwitter(g *Github, t *Twitter) {
 
 func main() {
 	flag.Parse()
+	lvl, err := log.ParseLevel(*logLevel)
+	if err != nil {
+		log.WithFields(log.Fields{"log level": *logLevel}).WithError(err).Fatal("Cannot parse log level")
+	}
+	log.SetLevel(lvl)
 
 	tokens, err := LoadTokens()
-	twitter := NewTwitter(tokens.twitter)
-	gh := NewGithub(tokens.github)
+	log.Info("Tokens are loaded")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Fatal("Cannot parse tokens")
 		return
 	}
+
+	twitter := NewTwitter(tokens.twitter)
+	log.Info("Connect to twitter")
+	gh := NewGithub(tokens.github)
+	log.Info("Connect to github")
 
 	if *isDelete {
 		if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
@@ -61,12 +70,6 @@ func main() {
 			return
 		}
 	}
-
-	lvl, err := log.ParseLevel(*logLevel)
-	if err != nil {
-		log.WithFields(log.Fields{"log level": *logLevel}).WithError(err).Fatal("Cannot parse log level")
-	}
-	log.SetLevel(lvl)
 
 	// Single post by number
 	// n := 31705
