@@ -93,7 +93,6 @@ func (g *Github) PullFunc(num int, f func(*github.Issue) error) error {
 
 	pull, _, err := client.Issues.Get(context.Background(), Owner, Repo, num)
 	if err != nil {
-		log.WithFields(log.Fields{"Owner": Owner, "Repo": Repo, "number": num}).WithError(err).Error("Cannot get issue")
 		return err
 	}
 
