@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"image"
 	"io"
 	"net/http"
@@ -187,7 +188,7 @@ func (t *Twitter) PostToTwitter(cutie *DockerCutie) error {
 
 	v := url.Values{}
 	v.Set("media_ids", strconv.FormatInt(mediaResponse.MediaID, 10))
-	msg := cutie.pullURL
+	msg := fmt.Sprintf("%s #dockercuties", cutie.pullURL)
 	_, err = api.PostTweet(msg, v)
 	if err != nil {
 		log.WithFields(log.Fields{"Tweet message": msg}).WithError(err).Error("Cannot post tweet")
