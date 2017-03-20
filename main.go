@@ -11,6 +11,7 @@ import (
 
 var isDelete = flag.Bool("delete", false, "delete all tweets before posting")
 var logLevel = flag.String("loglevel", "warning", "log level (panic, fatal, error, warn or warning, info, debug)")
+var lastPosted int
 
 func updateTwitter(g *Github, t *Twitter) {
 	// tweetCutie posts cutie from pull request pull to twitter
@@ -22,18 +23,14 @@ func updateTwitter(g *Github, t *Twitter) {
 				if err := t.PostToTwitter(cutie); err != nil {
 					return err
 				}
+				lastPosted = *pull.Number
 			}
 		}
 		return nil
 	}
 
-	lastPosted, err := t.LastPostedPull()
-	if err != nil {
-		log.WithError(err).Error("Cannot check last posted pull request")
-		return
-	}
 	if lastPosted > 0 {
-		if err = g.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
+		if err := g.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
 			if strings.Contains(err.Error(), "404 Not Found") {
 				log.WithFields(log.Fields{"Owner": Owner, "Repo": Repo, "number": lastPosted + 1}).Debug("Issue not found")
 				return
@@ -42,7 +39,7 @@ func updateTwitter(g *Github, t *Twitter) {
 			return
 		}
 	} else {
-		if err = g.PullsSinceFunc(StartCutiePullReq, tweetCutie); err != nil {
+		if err := g.PullsSinceFunc(StartCutiePullReq, tweetCutie); err != nil {
 			log.WithFields(log.Fields{"since": StartCutiePullReq}).WithError(err).Error("For pull requests since")
 			return
 		}
@@ -83,6 +80,12 @@ func main() {
 	// 	return
 	// }
 	// return
+
+	lastPosted, err = twitter.LastPostedPull()
+	if err != nil {
+		log.WithError(err).Error("Cannot check last posted pull request")
+		return
+	}
 
 	for range time.Tick(60 * time.Second) {
 		updateTwitter(gh, twitter)
