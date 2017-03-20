@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"strings"
 	"time"
 
@@ -18,9 +19,15 @@ func updateTwitter(g *Github, t *Twitter) {
 	tweetCutie := func(pull *github.Issue) error {
 		if pull.Body != nil {
 			cutie := GetCutieFromPull(pull)
-			if cutie != nil {
-				log.WithFields(log.Fields{"number": cutie.pullnumber, "pull": cutie.pullURL, "cutie": cutie.cutieURL}).Info("Cutie")
-				if err := t.PostToTwitter(cutie); err != nil {
+			if cutie == "screenshot" {
+				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Warn("Screenshot detected")
+				t.Notify(fmt.Sprintf("Screenshot detected: %s", *pull.HTMLURL))
+				return nil
+			}
+			if cutie != "" {
+				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Info("Cutie")
+				msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
+				if err := t.PostToTwitter(cutie, msg); err != nil {
 					return err
 				}
 				lastPosted = *pull.Number
@@ -73,8 +80,28 @@ func main() {
 		}
 	}
 
-	// // Single post by number
-	// n := 31799
+	// tweetCutie := func(pull *github.Issue) error {
+	// 	if pull.Body != nil {
+	// 		msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
+	// 		cutie := GetCutieFromPull(pull)
+	// 		if cutie == "screenshot" {
+	// 			log.WithFields(log.Fields{"number": *pull.Number, "RUL": *pull.HTMLURL}).Warn("Screenshot detected")
+	// 			twitter.Notify(msg)
+	// 			return nil
+	// 		}
+	// 		if cutie != "" {
+	// 			log.WithFields(log.Fields{"number": *pull.Number}).Info("Cutie")
+	// 			if err := twitter.PostToTwitter(cutie, msg); err != nil {
+	// 				return err
+	// 			}
+	// 			lastPosted = *pull.Number
+	// 		}
+	// 	}
+	// 	return nil
+	// }
+	// Single post by number
+	// n := 31933
+	// n := 31773
 	// if err = gh.PullFunc(n, tweetCutie); err != nil {
 	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
 	// 	return
@@ -87,7 +114,7 @@ func main() {
 		return
 	}
 
-	for range time.Tick(60 * time.Second) {
+	for range time.Tick(20 * time.Second) {
 		updateTwitter(gh, twitter)
 	}
 }
