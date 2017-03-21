@@ -77,7 +77,7 @@ func (g *Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 			if *pr.Number < since {
 				continue
 			}
-			log.WithFields(log.Fields{"number": *pr.Number, " title": *pr.Title}).Debug("Pull request")
+			log.WithFields(log.Fields{"number": *pr.Number, " URL": *pr.HTMLURL}).Debug("Pull request")
 			if err := f(&pr); err != nil {
 				return err
 			}

@@ -1,12 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
-	"fmt"
-	"image"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -14,7 +8,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/ChimeraCoder/anaconda"
-	"github.com/lelenanam/downsize"
 )
 
 // TwitterTokens provides credentials for accessing twitter
@@ -135,64 +128,30 @@ func (t *Twitter) LastPostedPull() (int, error) {
 }
 
 // PostToTwitter posts cutie to twitter
-func (t *Twitter) PostToTwitter(cutie *DockerCutie) error {
+func (t *Twitter) PostToTwitter(cutie string, msg string) error {
 	api := t.api
-
-	log.WithFields(log.Fields{"URL": cutie.cutieURL}).Debug("Download")
-	res, err := http.Get(cutie.cutieURL)
+	mediaResponse, err := api.UploadMedia(cutie)
 	if err != nil {
-		log.WithFields(log.Fields{"URL": cutie.cutieURL}).WithError(err).Error("Cannot download")
-		return nil
-	}
-
-	log.WithFields(log.Fields{"Content Length": res.ContentLength, "Status Code": res.StatusCode}).Debug("Got")
-	defer res.Body.Close()
-
-	b := bytes.NewBuffer(nil)
-	encoder := base64.NewEncoder(base64.StdEncoding, b)
-	defer encoder.Close()
-
-	if res.ContentLength >= TwitterUploadLimit || res.ContentLength < 0 {
-		img, format, err := image.Decode(res.Body)
-		if err != nil {
-			log.WithFields(log.Fields{"Body": res.Body}).WithError(err).Error("Cannot decode image")
-			return nil
-		}
-		log.WithFields(log.Fields{"Twitter upload limit": TwitterUploadLimit}).Debug("Downsize image")
-		opts := &downsize.Options{Size: TwitterUploadLimit, Format: format}
-		err = downsize.Encode(encoder, img, opts)
-		if err != nil {
-			log.WithFields(log.Fields{"Body": res.Body}).WithError(err).Error("Cannot downsize")
-			return nil
-		}
-	} else {
-		_, err := io.Copy(encoder, res.Body)
-		if err != nil {
-			log.WithFields(log.Fields{"Body": res.Body}).WithError(err).Error("Cannot copy to writer")
-			return nil
-		}
-	}
-	encoder.Close()
-
-	if b.Len() == 0 {
-		log.WithFields(log.Fields{"Body": res.Body}).Warn("Empty image data")
-		return nil
-	}
-
-	mediaResponse, err := api.UploadMedia(b.String())
-	if err != nil {
-		log.WithFields(log.Fields{"String of data": b.String()}).WithError(err).Error("Cannot upload data")
-		return nil
+		log.WithFields(log.Fields{"String of data": cutie}).WithError(err).Error("Cannot upload data")
+		return err
 	}
 	log.WithFields(log.Fields{"MediaID": mediaResponse.MediaID}).Debug("Uploaded")
 
 	v := url.Values{}
 	v.Set("media_ids", strconv.FormatInt(mediaResponse.MediaID, 10))
-	msg := fmt.Sprintf("%s #dockercuties #docker", cutie.pullURL)
 	_, err = api.PostTweet(msg, v)
 	if err != nil {
 		log.WithFields(log.Fields{"Tweet message": msg}).WithError(err).Error("Cannot post tweet")
-		return nil
+		return err
 	}
 	return nil
+}
+
+// Notify notifies ProjectOwner about screenshot and errors with direct message in twitter
+func (t *Twitter) Notify(msg string) {
+	api := t.api
+	_, err := api.PostDMToScreenName(msg, ProjectOwner)
+	if err != nil {
+		log.WithFields(log.Fields{"Message": msg}).WithError(err).Error("Cannot notify")
+	}
 }
