@@ -107,11 +107,7 @@ func main() {
 	// }
 	// return
 
-	lastPosted, err = twitter.LastPostedPull()
-	if err != nil {
-		log.WithError(err).Error("Cannot check last posted pull request")
-		return
-	}
+	lastPosted = twitter.LastPostedPull()
 
 	for range time.Tick(60 * time.Second) {
 		updateTwitter(gh, twitter)

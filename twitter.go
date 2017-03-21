@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -81,50 +82,51 @@ func (t *Twitter) DeleteAllTweets(user string) error {
 	return nil
 }
 
-// LastPostedPull returns last number of pull request posted to twitter
+// LastPostedPull returns the largest number of pull request posted to twitter
 // if pull request link not found in twitter timeline, returns -1
-func (t *Twitter) LastPostedPull() (int, error) {
+func (t *Twitter) LastPostedPull() int {
 	api := t.api
+	last := -1
 
 	v := url.Values{}
 	v.Set("user", TwitterUser)
 
 	timeline, err := api.GetUserTimeline(v)
 	if err != nil {
-		return -1, err
-	}
-
-	for _, tw := range timeline {
-		log.WithFields(log.Fields{"Created At": tw.CreatedAt, "Text": tw.Text}).Debug("Twitter timeline")
+		return -1
 	}
 
 	if len(timeline) == 0 {
-		return -1, nil
+		return -1
 	}
-
-	withURLs := -1
-	for i, tw := range timeline {
-		if len(tw.Entities.Urls) > 0 {
-			withURLs = i
-			break
+	for _, tw := range timeline {
+		n := GetPullNumber(tw)
+		if n > last {
+			last = n
 		}
 	}
-	if withURLs == -1 {
-		return -1, nil
-	}
+	return last
+}
 
-	urls := timeline[withURLs].Entities.Urls
-	var lastpull string
+// GetPullNumber returns number of github pull request from tweet tw
+// number is last digists in URL like this: https://github.com/docker/docker/pull/31980
+// if there are more then one number, returns largest one
+// if not found returns -1
+func GetPullNumber(tw anaconda.Tweet) int {
+	number := -1
+	urls := tw.Entities.Urls
+	pullPrefix := fmt.Sprintf("https://github.com/%s/%s/pull/", Owner, Repo)
 	for _, u := range urls {
-		log.WithFields(log.Fields{"URL": u.Expanded_url}).Debug("Last posted")
-		lastpull = u.Expanded_url //last url in tweet
+		suffix := strings.TrimPrefix(u.Expanded_url, pullPrefix)
+		num, err := strconv.Atoi(suffix)
+		if err != nil {
+			continue
+		}
+		if num > number {
+			number = num
+		}
 	}
-	splited := strings.Split(lastpull, "/")
-	lastNstr := splited[len(splited)-1]
-	if n, err := strconv.Atoi(lastNstr); err == nil {
-		return n, nil
-	}
-	return -1, nil
+	return number
 }
 
 // PostToTwitter posts cutie to twitter
