@@ -101,7 +101,6 @@ func main() {
 	// }
 	// Single post by number
 	// n := 31933
-	// n := 31773
 	// if err = gh.PullFunc(n, tweetCutie); err != nil {
 	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
 	// 	return
@@ -114,7 +113,7 @@ func main() {
 		return
 	}
 
-	for range time.Tick(20 * time.Second) {
+	for range time.Tick(60 * time.Second) {
 		updateTwitter(gh, twitter)
 	}
 }
