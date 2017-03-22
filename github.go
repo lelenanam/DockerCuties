@@ -96,7 +96,7 @@ func (g *Github) PullFunc(num int, f func(*github.Issue) error) error {
 		return err
 	}
 
-	log.WithFields(log.Fields{"number": *pull.Number, " title": *pull.Title}).Debug("Pull request")
+	log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Debug("Pull request")
 	if err := f(pull); err != nil {
 		return err
 	}
