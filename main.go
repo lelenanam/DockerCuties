@@ -28,6 +28,7 @@ func updateTwitter(g *Github, t *Twitter) {
 				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Info("Cutie")
 				msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
 				if err := t.PostToTwitter(cutie, msg); err != nil {
+					t.Notify(fmt.Sprintf("Cannot post tweet: %s", err))
 					return err
 				}
 				lastPosted = *pull.Number
@@ -35,7 +36,7 @@ func updateTwitter(g *Github, t *Twitter) {
 		}
 		return nil
 	}
-
+	log.WithFields(log.Fields{"number": lastPosted}).Debug("Last posted")
 	if lastPosted > 0 {
 		if err := g.PullsSinceFunc(lastPosted+1, tweetCutie); err != nil {
 			if strings.Contains(err.Error(), "404 Not Found") {
@@ -43,11 +44,13 @@ func updateTwitter(g *Github, t *Twitter) {
 				return
 			}
 			log.WithFields(log.Fields{"since": lastPosted + 1}).WithError(err).Error("For pull requests since")
+			t.Notify(fmt.Sprintf("Error for pull requests since %d: %s", lastPosted+1, err))
 			return
 		}
 	} else {
 		if err := g.PullsSinceFunc(StartCutiePullReq, tweetCutie); err != nil {
 			log.WithFields(log.Fields{"since": StartCutiePullReq}).WithError(err).Error("For pull requests since")
+			t.Notify(fmt.Sprintf("Error for pull requests since %d: %s", StartCutiePullReq, err))
 			return
 		}
 	}
@@ -76,6 +79,7 @@ func main() {
 	if *isDelete {
 		if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
 			log.WithFields(log.Fields{"User": TwitterUser}).WithError(err).Error("Cannot delete all tweets")
+			twitter.Notify(fmt.Sprintf("Cannot delete all tweets: %s", err))
 			return
 		}
 	}
