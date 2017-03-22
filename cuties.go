@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
@@ -44,26 +43,38 @@ const ProjectOwner = "lelenanam"
 //TwitterUploadLimit is limit for media upload in bytes
 const TwitterUploadLimit = 3145728
 
-// GetURLFromPull parses the body of the pull request and return an image URL if found
+// GetURLFromPull parses the body of the pull request and return last image URL if found
+// try to find flickr first
 func GetURLFromPull(pull *github.Issue) string {
-	if strings.Contains(*pull.Body, "flickr.com") {
-		log.WithFields(log.Fields{"body": *pull.Body, "pull": *pull.URL}).Warn("flic.kr found")
-		// [![kitteh](https://c2.staticflickr.com/4/3147/2567501805_17ee8fd947_z.jpg)](https://flic.kr/p/4UT7Qv)
-		re := regexp.MustCompile(`\[!\[.*\]\((.*)\)\]\(.*\)`)
-		result := re.FindStringSubmatch(*pull.Body)
-		if len(result) > 1 {
-			return result[len(result)-1]
+	str := *pull.Body
+	res := ""
+
+	// Example:
+	// [![kitteh](https://c2.staticflickr.com/4/3147/2567501805_17ee8fd947_z.jpg)](https://flic.kr/p/4UT7Qv)
+	flickre := regexp.MustCompile(`\[!\[.*\]\((.*)\)\]\(.*\)`)
+	flickResult := flickre.FindAllStringSubmatch(str, -1)
+
+	if len(flickResult) > 0 {
+		lastres := flickResult[len(flickResult)-1]
+		if len(lastres) > 1 {
+			res := lastres[len(lastres)-1]
+			return res
 		}
-		return ""
 	}
 
+	// Example:
 	// ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png)
-	re := regexp.MustCompile(`!\[.*\]\((.*)\)`)
-	result := re.FindStringSubmatch(*pull.Body)
-	if len(result) > 1 {
-		return result[len(result)-1]
+	imagere := regexp.MustCompile(`!\[.*\]\((.*)\)`)
+	imageResult := imagere.FindAllStringSubmatch(str, -1)
+
+	if len(imageResult) > 0 {
+		lastres := imageResult[len(imageResult)-1]
+		if len(lastres) > 1 {
+			res := lastres[len(lastres)-1]
+			return res
+		}
 	}
-	return ""
+	return res
 }
 
 // GetImageFromURL downloads an image from url and returns image img, its size, format and error
@@ -83,11 +94,11 @@ func GetImageFromURL(url string) (img image.Image, format string, size int, err 
 	}()
 
 	img, format, err = image.Decode(res.Body)
-	log.WithFields(log.Fields{"format": format, "size": int(res.ContentLength)}).Debug("Image decoded")
 	if err != nil {
 		log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot decode image")
 		return nil, "", 0, err
 	}
+	log.WithFields(log.Fields{"format": format, "size": int(res.ContentLength)}).Debug("Image decoded")
 	return img, format, int(res.ContentLength), nil
 }
 
@@ -125,25 +136,25 @@ func GetStringFromImage(img image.Image, format string, size int) (string, error
 }
 
 // GetCutieFromPull returns string of cutie image from pull request pull
-func GetCutieFromPull(pull *github.Issue) string {
+func GetCutieFromPull(pull *github.Issue) (string, error) {
 	url := GetURLFromPull(pull)
 	if url != "" {
 		img, format, size, err := GetImageFromURL(url)
 		if err != nil {
 			log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot get image from URL")
-			return ""
+			return "", err
 		}
 		if screenshot.Detect(img) {
-			return "screenshot"
+			return "screenshot", nil
 		}
 		str, err := GetStringFromImage(img, format, size)
 		if err != nil {
 			log.WithFields(log.Fields{"Pull request": pull.Number}).WithError(err).Error("Cannot get string for image")
-			return ""
+			return "", err
 		}
-		return str
+		return str, nil
 	}
-	return ""
+	return "", nil
 }
 
 // ImageEncode encodes image m with format to writer w

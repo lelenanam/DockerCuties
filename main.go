@@ -18,7 +18,10 @@ func updateTwitter(g *Github, t *Twitter) {
 	// tweetCutie posts cutie from pull request pull to twitter
 	tweetCutie := func(pull *github.Issue) error {
 		if pull.Body != nil {
-			cutie := GetCutieFromPull(pull)
+			cutie, err := GetCutieFromPull(pull)
+			if err != nil {
+				t.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
+			}
 			if cutie == "screenshot" {
 				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Warn("Screenshot detected")
 				t.Notify(fmt.Sprintf("Screenshot detected: %s", *pull.HTMLURL))
@@ -86,16 +89,21 @@ func main() {
 
 	// tweetCutie := func(pull *github.Issue) error {
 	// 	if pull.Body != nil {
-	// 		msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
-	// 		cutie := GetCutieFromPull(pull)
+	// 		cutie, err := GetCutieFromPull(pull)
+	// 		if err != nil {
+	// 			twitter.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
+	// 			return err
+	// 		}
 	// 		if cutie == "screenshot" {
-	// 			log.WithFields(log.Fields{"number": *pull.Number, "RUL": *pull.HTMLURL}).Warn("Screenshot detected")
-	// 			twitter.Notify(msg)
+	// 			log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Warn("Screenshot detected")
+	// 			twitter.Notify(fmt.Sprintf("Screenshot detected: %s", *pull.HTMLURL))
 	// 			return nil
 	// 		}
 	// 		if cutie != "" {
 	// 			log.WithFields(log.Fields{"number": *pull.Number}).Info("Cutie")
+	// 			msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
 	// 			if err := twitter.PostToTwitter(cutie, msg); err != nil {
+	// 				twitter.Notify(fmt.Sprintf("Cannot post tweet: %s", err))
 	// 				return err
 	// 			}
 	// 			lastPosted = *pull.Number
@@ -103,8 +111,8 @@ func main() {
 	// 	}
 	// 	return nil
 	// }
-	// Single post by number
-	// n := 31933
+	// // Single post by number
+	// n := 22128
 	// if err = gh.PullFunc(n, tweetCutie); err != nil {
 	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
 	// 	return
