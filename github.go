@@ -24,7 +24,7 @@ func NewGithub(t GithubToken) *Github {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: t.githubPersonalAccessToken},
 	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	tc := oauth2.NewClient(context.Background(), ts)
 	return &Github{api: github.NewClient(tc)}
 }
 
@@ -32,10 +32,10 @@ func NewGithub(t GithubToken) *Github {
 func (g *Github) PullsSinceFunc(since int, f func(*github.Issue) error) error {
 	client := g.api
 
-	last := since
 	if since < 0 {
 		since = 1
 	}
+	last := since
 
 	oldest, _, err := client.Issues.Get(context.Background(), Owner, Repo, since)
 	if err != nil {
@@ -97,8 +97,6 @@ func (g *Github) PullFunc(num int, f func(*github.Issue) error) error {
 	}
 
 	log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Debug("Pull request")
-	if err := f(pull); err != nil {
-		return err
-	}
-	return nil
+	err = f(pull)
+	return err
 }
