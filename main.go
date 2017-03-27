@@ -81,30 +81,30 @@ func main() {
 		return
 	}
 
-	twitter := NewTwitter(tokens.twitter)
+	t := NewTwitter(tokens.twitter)
 	log.Info("Connect to twitter")
 	gh := NewGithub(tokens.github)
 	log.Info("Connect to github")
 
 	if *isDelete {
-		if err := twitter.DeleteAllTweets(TwitterUser); err != nil {
+		if err := t.DeleteAllTweets(TwitterUser); err != nil {
 			log.WithFields(log.Fields{"User": TwitterUser}).WithError(err).Error("Cannot delete all tweets")
-			twitter.Notify(fmt.Sprintf("Cannot delete all tweets: %s", err))
+			t.Notify(fmt.Sprintf("Cannot delete all tweets: %s", err))
 			return
 		}
 	}
 
 	// // Single post by number
-	// n := 22128
+	// n := 32085
 	// if err = gh.PullFunc(n, tweetCutie); err != nil {
 	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
 	// 	return
 	// }
 	// return
 
-	lastPosted = twitter.LastPostedPull()
+	lastPosted = t.LastPostedPull()
 
 	for range time.Tick(60 * time.Second) {
-		updateTwitter(gh, twitter)
+		updateTwitter(gh, t)
 	}
 }
