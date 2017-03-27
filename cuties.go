@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/pkg/errors"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/lelenanam/downsize"
@@ -135,26 +137,27 @@ func GetStringFromImage(img image.Image, format string, size int) (string, error
 	return b.String(), nil
 }
 
+var errIsScreenshot = errors.New("picture is screenshot")
+var errImageNotFound = errors.New("picture not found")
+
 // GetCutieFromPull returns string of cutie image from pull request pull
 func GetCutieFromPull(pull *github.Issue) (string, error) {
 	url := GetURLFromPull(pull)
-	if url != "" {
-		img, format, size, err := GetImageFromURL(url)
-		if err != nil {
-			log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot get image from URL")
-			return "", err
-		}
-		if screenshot.Detect(img) {
-			return "screenshot", nil
-		}
-		str, err := GetStringFromImage(img, format, size)
-		if err != nil {
-			log.WithFields(log.Fields{"Pull request": pull.Number}).WithError(err).Error("Cannot get string for image")
-			return "", err
-		}
-		return str, nil
+	if url == "" {
+		return "", errImageNotFound
 	}
-	return "", nil
+	img, format, size, err := GetImageFromURL(url)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot get image from URL")
+	}
+	if screenshot.Detect(img) {
+		return "", errIsScreenshot
+	}
+	str, err := GetStringFromImage(img, format, size)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot get string for image")
+	}
+	return str, nil
 }
 
 // ImageEncode encodes image m with format to writer w

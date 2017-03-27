@@ -17,25 +17,32 @@ var lastPosted int
 func updateTwitter(g *Github, t *Twitter) {
 	// tweetCutie posts cutie from pull request pull to twitter
 	tweetCutie := func(pull *github.Issue) error {
-		if pull.Body != nil {
-			cutie, err := GetCutieFromPull(pull)
-			if err != nil {
-				t.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
-			}
-			if cutie == "screenshot" {
+		if pull.Body == nil {
+			return nil
+		}
+		cutie, err := GetCutieFromPull(pull)
+		if err != nil {
+			switch err {
+			case errImageNotFound:
+
+			case errIsScreenshot:
 				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Warn("Screenshot detected")
 				t.Notify(fmt.Sprintf("Screenshot detected: %s", *pull.HTMLURL))
-				return nil
+			default:
+				log.WithFields(log.Fields{"since": lastPosted + 1}).WithError(err).Error("For pull requests since")
+				t.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
+				// return err
 			}
-			if cutie != "" {
-				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Info("Cutie")
-				msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
-				if err := t.PostToTwitter(cutie, msg); err != nil {
-					t.Notify(fmt.Sprintf("Cannot post tweet: %s", err))
-					return err
-				}
-				lastPosted = *pull.Number
+			return nil
+		}
+		if cutie != "" {
+			log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Info("Cutie")
+			msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
+			if err := t.PostToTwitter(cutie, msg); err != nil {
+				t.Notify(fmt.Sprintf("Cannot post tweet: %s", err))
+				return err
 			}
+			lastPosted = *pull.Number
 		}
 		return nil
 	}
@@ -87,30 +94,6 @@ func main() {
 		}
 	}
 
-	// tweetCutie := func(pull *github.Issue) error {
-	// 	if pull.Body != nil {
-	// 		cutie, err := GetCutieFromPull(pull)
-	// 		if err != nil {
-	// 			twitter.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
-	// 			return err
-	// 		}
-	// 		if cutie == "screenshot" {
-	// 			log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Warn("Screenshot detected")
-	// 			twitter.Notify(fmt.Sprintf("Screenshot detected: %s", *pull.HTMLURL))
-	// 			return nil
-	// 		}
-	// 		if cutie != "" {
-	// 			log.WithFields(log.Fields{"number": *pull.Number}).Info("Cutie")
-	// 			msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
-	// 			if err := twitter.PostToTwitter(cutie, msg); err != nil {
-	// 				twitter.Notify(fmt.Sprintf("Cannot post tweet: %s", err))
-	// 				return err
-	// 			}
-	// 			lastPosted = *pull.Number
-	// 		}
-	// 	}
-	// 	return nil
-	// }
 	// // Single post by number
 	// n := 22128
 	// if err = gh.PullFunc(n, tweetCutie); err != nil {
