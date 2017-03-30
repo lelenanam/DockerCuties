@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 
@@ -80,12 +81,13 @@ func GetURLFromPull(pull *github.Issue) string {
 }
 
 // GetImageFromURL downloads an image from url and returns image img, its size, format and error
-func GetImageFromURL(url string) (img image.Image, format string, size int, err error) {
+// for animated gif format returns data in gifByte slice
+func GetImageFromURL(url string) (img image.Image, format string, size int, gifByte []byte, err error) {
 	log.WithFields(log.Fields{"URL": url}).Debug("Download")
 	res, err := http.Get(url)
 	if err != nil {
 		log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot download")
-		return nil, "", 0, err
+		return nil, "", 0, nil, err
 	}
 	log.WithFields(log.Fields{"Content Length": res.ContentLength, "Status Code": res.StatusCode}).Debug("Got")
 
@@ -95,17 +97,29 @@ func GetImageFromURL(url string) (img image.Image, format string, size int, err 
 		}
 	}()
 
-	img, format, err = image.Decode(res.Body)
+	var reader io.Reader = res.Body
+
+	if res.Header["Content-Type"][0] == "image/gif" {
+		gifByte, err = ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot read body")
+			return nil, "gif", 0, nil, err
+		}
+		reader = bytes.NewReader(gifByte)
+	}
+
+	img, format, err = image.Decode(reader)
 	if err != nil {
 		log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot decode image")
-		return nil, "", 0, err
+		return nil, "", 0, nil, err
 	}
+
 	log.WithFields(log.Fields{"format": format, "size": int(res.ContentLength)}).Debug("Image decoded")
-	return img, format, int(res.ContentLength), nil
+	return img, format, int(res.ContentLength), gifByte, nil
 }
 
 // GetStringFromImage returns string of cutie image img or error
-func GetStringFromImage(img image.Image, format string, size int) (string, error) {
+func GetStringFromImage(img image.Image, format string, size int, gifByte []byte) (string, error) {
 	b := bytes.NewBuffer(nil)
 	encoder := base64.NewEncoder(base64.StdEncoding, b)
 
@@ -118,10 +132,20 @@ func GetStringFromImage(img image.Image, format string, size int) (string, error
 			log.WithFields(log.Fields{"format": format}).WithError(err).Error("Cannot downsize image")
 			return "", err
 		}
-	} else { // no need to resize, just encode
-		if err := ImageEncode(encoder, img, format); err != nil {
-			log.WithFields(log.Fields{"format": format}).WithError(err).Error("Cannot encode image")
-			return "", err
+	} else {
+		if format == "gif" {
+			gifReader := bytes.NewReader(gifByte)
+			_, err := io.Copy(encoder, gifReader)
+			if err != nil {
+				log.WithFields(log.Fields{"format": format}).WithError(err).Error("Cannot copy gif image")
+				return "", err
+			}
+		} else {
+			// no need to resize, just encode
+			if err := ImageEncode(encoder, img, format); err != nil {
+				log.WithFields(log.Fields{"format": format}).WithError(err).Error("Cannot encode image")
+				return "", err
+			}
 		}
 	}
 
@@ -146,14 +170,14 @@ func GetCutieFromPull(pull *github.Issue) (string, error) {
 	if url == "" {
 		return "", errImageNotFound
 	}
-	img, format, size, err := GetImageFromURL(url)
+	img, format, size, gifByte, err := GetImageFromURL(url)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot get image from URL")
 	}
 	if screenshot.Detect(img) {
 		return "", errIsScreenshot
 	}
-	str, err := GetStringFromImage(img, format, size)
+	str, err := GetStringFromImage(img, format, size, gifByte)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot get string for image")
 	}
