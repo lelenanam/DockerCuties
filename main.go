@@ -28,10 +28,10 @@ func updateTwitter(g *Github, t *Twitter) {
 			case errIsScreenshot:
 				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Warn("Screenshot detected")
 				t.Notify(fmt.Sprintf("Screenshot detected: %s", *pull.HTMLURL))
+				lastPosted = *pull.Number
 			default:
 				log.WithFields(log.Fields{"since": lastPosted + 1}).WithError(err).Error("For pull requests since")
 				t.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
-				// return err
 			}
 			return nil
 		}
