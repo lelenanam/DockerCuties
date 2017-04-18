@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -109,21 +108,24 @@ func (t *Twitter) LastPostedPull() int {
 }
 
 // GetPullNumber returns number of github pull request from tweet tw
-// number is last digists in URL like this: https://github.com/docker/docker/pull/31980
+// number is last digists in URL like this:
+// https://github.com/docker/docker/pull/31980 or https://github.com/moby/moby/pull/32659
 // if there are more then one number, returns largest one
 // if not found returns -1
 func GetPullNumber(tw anaconda.Tweet) int {
 	number := -1
 	urls := tw.Entities.Urls
-	pullPrefix := fmt.Sprintf("https://github.com/%s/%s/pull/", Owner, Repo)
 	for _, u := range urls {
-		suffix := strings.TrimPrefix(u.Expanded_url, pullPrefix)
-		num, err := strconv.Atoi(suffix)
-		if err != nil {
-			continue
-		}
-		if num > number {
-			number = num
+		if strings.HasPrefix(u.Expanded_url, "https://github.com/") {
+			pullNumberIndex := strings.LastIndex(u.Expanded_url, "/") + 1
+			pullNumber := u.Expanded_url[pullNumberIndex:]
+			num, err := strconv.Atoi(pullNumber)
+			if err != nil {
+				continue
+			}
+			if num > number {
+				number = num
+			}
 		}
 	}
 	return number
