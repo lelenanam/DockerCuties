@@ -14,6 +14,12 @@ var isDelete = flag.Bool("delete", false, "delete all tweets before posting")
 var logLevel = flag.String("loglevel", "warning", "log level (panic, fatal, error, warn or warning, info, debug)")
 var lastPosted int
 
+// Number of attempts to post if error occurred
+var maxAttempts = 3
+
+// Number of current attempt
+var attempt = 0
+
 func updateTwitter(g *Github, t *Twitter) {
 	// tweetCutie posts cutie from pull request pull to twitter
 	tweetCutie := func(pull *github.Issue) error {
@@ -30,8 +36,13 @@ func updateTwitter(g *Github, t *Twitter) {
 				t.Notify(fmt.Sprintf("%d Screenshot detected: %s", *pull.Number, *pull.HTMLURL))
 				lastPosted = *pull.Number
 			default:
-				log.WithFields(log.Fields{"since": lastPosted + 1}).WithError(err).Error("For pull requests since")
-				t.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
+				log.WithFields(log.Fields{"since": lastPosted + 1, "attempt": attempt, "PullNumber": *pull.Number}).WithError(err).Error("For pull requests since")
+				attempt++
+				if attempt == maxAttempts {
+					t.Notify(fmt.Sprintf("Cannot get cutie from pull request %d, %s: %s", *pull.Number, *pull.HTMLURL, err))
+					lastPosted = *pull.Number
+				}
+				return err
 			}
 			return nil
 		}
@@ -93,9 +104,8 @@ func main() {
 			return
 		}
 	}
-
 	// // Single post by number
-	// n := 32435
+	// n := 21825
 	// if err = gh.PullFunc(n, tweetCutie); err != nil {
 	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
 	// 	return
