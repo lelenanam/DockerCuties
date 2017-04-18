@@ -26,10 +26,10 @@ import (
 const StartCutiePullReq = 20514
 
 //Repo is repository with docker cuties
-const Repo = "docker"
+const Repo = "moby"
 
 //Owner of repository
-const Owner = "docker"
+const Owner = "moby"
 
 //SearchIssuesLimit is github limit for Search.Issues results
 const SearchIssuesLimit = 1000
