@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -61,12 +62,13 @@ func GetURLFromPull(pull *github.Issue) string {
 		lastres := flickResult[len(flickResult)-1]
 		if len(lastres) > 1 {
 			res := lastres[len(lastres)-1]
+			res = strings.SplitN(res, " ", 2)[0]
 			return res
 		}
 	}
 
 	// Example:
-	// ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png)
+	// ![image](https://cloud.githubusercontent.com/assets/2367858/23283487/02bb756e-f9db-11e6-9aa8-5f3e1bb80df3.png  "Swans")
 	imagere := regexp.MustCompile(`!\[.*\]\((.*)\)`)
 	imageResult := imagere.FindAllStringSubmatch(str, -1)
 
@@ -74,6 +76,7 @@ func GetURLFromPull(pull *github.Issue) string {
 		lastres := imageResult[len(imageResult)-1]
 		if len(lastres) > 1 {
 			res := lastres[len(lastres)-1]
+			res = strings.SplitN(res, " ", 2)[0]
 			return res
 		}
 	}
