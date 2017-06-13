@@ -87,7 +87,13 @@ func GetURLFromPull(pull *github.Issue) string {
 // for animated gif format returns data in gifByte slice
 func GetImageFromURL(url string) (img image.Image, format string, size int, gifByte []byte, err error) {
 	log.WithFields(log.Fields{"URL": url}).Debug("Download")
-	res, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot create new GET request")
+		return nil, "", 0, nil, err
+	}
+	req.Header.Add("User-Agent", "Mozilla/5.0 Firefox/26.0")
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.WithFields(log.Fields{"URL": url}).WithError(err).Error("Cannot download")
 		return nil, "", 0, nil, err
