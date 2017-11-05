@@ -53,7 +53,7 @@ Bind mount volume `TOKENS`, assign the name `cuteiner` to the container.
 To change log level use parameter `app --loglevel`
 
 ```sh
-$ docker run -v $(pwd)/TOKENS:/go/src/app/TOKENS -d --name=cuteiner cuteimage app --loglevel=info
+$ docker run -v $(pwd)/TOKENS:/go/src/app/TOKENS -d --name=cuteiner cuteimage --loglevel=info
 ```
 
 Now you should see your `cuteiner` listed in the output for the `docker ps` command.
