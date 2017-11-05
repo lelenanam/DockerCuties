@@ -12,6 +12,7 @@ import (
 
 var isDelete = flag.Bool("delete", false, "delete all tweets before posting")
 var logLevel = flag.String("loglevel", "warning", "log level (panic, fatal, error, warn or warning, info, debug)")
+var pullToPost = flag.Int("pullToPost", 0, "number of pull request to post without screenshot check")
 var lastPosted int
 
 // Delay for update in seconds
@@ -29,7 +30,7 @@ func updateTwitter(g *Github, t *Twitter) error {
 		if pull.Body == nil {
 			return nil
 		}
-		cutie, err := GetCutieFromPull(pull)
+		cutie, err := GetCutieFromPull(pull, true)
 		if err != nil {
 			switch err {
 			case errImageNotFound:
@@ -108,17 +109,41 @@ func main() {
 			t.Notify(fmt.Sprintf("Cannot delete all tweets: %s", err))
 			return
 		}
+		return
 	}
-	// // Single post by number
-	// n := 21825
-	// if err = gh.PullFunc(n, tweetCutie); err != nil {
-	// 	log.WithFields(log.Fields{"number": n}).WithError(err).Error("For pull request")
-	// 	return
-	// }
-	// return
+
+	if *pullToPost > 0 {
+		// Single post without screenshot check
+		// docker run -v $(pwd)/TOKENS:/go/src/app/TOKENS --name=cuteiner --rm cuteimage --loglevel=debug --pullToPost=35342
+		tweetCutieNoCheck := func(pull *github.Issue) error {
+			if pull.Body == nil {
+				return nil
+			}
+			cutie, err := GetCutieFromPull(pull, false)
+			if err != nil {
+				log.WithFields(log.Fields{"since": lastPosted + 1, "attempt": attempt, "PullNumber": *pull.Number}).WithError(err).Error("For pull requests since")
+				return err
+			}
+
+			if cutie != "" {
+				log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).Info("Cutie")
+				msg := fmt.Sprintf("%s #dockercuties #docker", *pull.HTMLURL)
+				if err := t.PostToTwitter(cutie, msg); err != nil {
+					log.WithFields(log.Fields{"number": *pull.Number, "URL": *pull.HTMLURL}).WithError(err).Error("Cannot post tweet")
+					return err
+				}
+			}
+			return nil
+		}
+
+		if err = gh.PullFunc(*pullToPost, tweetCutieNoCheck); err != nil {
+			log.WithFields(log.Fields{"number": *pullToPost}).WithError(err).Error("For pull request")
+			return
+		}
+		return
+	}
 
 	lastPosted = t.LastPostedPull()
-
 	delay := defaultDelay
 
 	for {

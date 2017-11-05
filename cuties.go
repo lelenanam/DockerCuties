@@ -174,7 +174,7 @@ var errIsScreenshot = errors.New("picture is screenshot")
 var errImageNotFound = errors.New("picture not found")
 
 // GetCutieFromPull returns string of cutie image from pull request pull
-func GetCutieFromPull(pull *github.Issue) (string, error) {
+func GetCutieFromPull(pull *github.Issue, screenCheck bool) (string, error) {
 	url := GetURLFromPull(pull)
 	if url == "" {
 		return "", errImageNotFound
@@ -183,9 +183,11 @@ func GetCutieFromPull(pull *github.Issue) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "cannot get image from URL")
 	}
-	if screenshot.Detect(img) {
+
+	if screenCheck && screenshot.Detect(img) {
 		return "", errIsScreenshot
 	}
+
 	str, err := GetStringFromImage(img, format, size, gifByte)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot get string for image")
