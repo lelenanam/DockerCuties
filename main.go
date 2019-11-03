@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
+	log "github.com/sirupsen/logrus"
 )
 
 var isDelete = flag.Bool("delete", false, "delete all tweets before posting")

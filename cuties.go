@@ -16,10 +16,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
 	"github.com/lelenanam/downsize"
 	"github.com/lelenanam/screenshot"
+	log "github.com/sirupsen/logrus"
 )
 
 //StartCutiePullReq is the number of pull request

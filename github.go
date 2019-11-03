@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/google/go-github/github"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
