@@ -5,9 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-
 	"github.com/ChimeraCoder/anaconda"
+	log "github.com/sirupsen/logrus"
 )
 
 // TwitterTokens provides credentials for accessing twitter
